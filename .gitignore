@@ -1,0 +1,10 @@
+.vs
+Debug
+Release
+CompilerConstruction/Debug
+CompilerConstruction/Release
+CompilerConstruction/CompilerConstruction.vcxproj
+CompilerConstruction/CompilerConstruction.vcxproj.filters
+CompilerConstruction/CompilerConstruction.vcxproj.user
+
+
