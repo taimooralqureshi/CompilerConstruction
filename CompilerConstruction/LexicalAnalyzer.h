@@ -30,7 +30,7 @@ public:
 	bool isChar(string word);
 	bool isString(string word);
 	bool isPunctuator(string word);
-
+	bool isIndent(string word);
 	string isOperator(string word);
     bool isOperator_(string word); //   review
 

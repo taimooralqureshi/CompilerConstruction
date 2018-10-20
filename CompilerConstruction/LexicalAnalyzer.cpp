@@ -2,13 +2,9 @@
 
 #include "LexicalAnalyzer.h"
 #include "Token.h"
-#include <iostream>
-#include <conio.h>
 #include <fstream>
-#include <stdio.h>
-
 #include <regex>
-#include<vector>
+
 using namespace std;
 struct WL {
 	string word;
@@ -20,7 +16,7 @@ vector<string> word;
 vector<int> line_number;
 std::ofstream outfile("output.txt");
 vector<WL> wordLine;
-
+static bool lineStart = false;
 LexicalAnalyzer::LexicalAnalyzer(std::vector<string> fileInput)
 {
 	this->input = fileInput;
@@ -31,21 +27,19 @@ LexicalAnalyzer::~LexicalAnalyzer()
 {
 }
 
-bool pushTempStr(string &temp, unsigned Line)
+void pushTempStr(string &temp, unsigned Line)
 {
-	if (temp != "")
-	{
-		wordLine.push_back({ temp, Line+1 });
+		if(temp != "")
+			wordLine.push_back({ temp, Line + 1 });
+		else if (lineStart)
+			wordLine.push_back({ temp, Line + 1 });
 		temp = "";
-		return true;
-	}
-	return false;
 }
 
 void LexicalAnalyzer::tokenizer_() {
 	
 
-	int a = +1;
+
 	//variable declaration
 	string 
 		currentChar,
@@ -57,9 +51,10 @@ void LexicalAnalyzer::tokenizer_() {
 		lineSize,
 		noOfLines = input.size();
 
-	bool 
+	bool
 		multiLineComment = false,
 		isFloat = false;
+		
 
 	
 
@@ -68,7 +63,10 @@ void LexicalAnalyzer::tokenizer_() {
 	{
 		lineSize = input.at(line).size();
 		lineStr = input.at(line);
-
+		if (lineSize)
+			lineStart = true;
+		else
+			lineStart = false;
 		for (unsigned charIndex = 0; charIndex < lineSize; charIndex++)
 		{
 			currentChar = lineStr[charIndex];
@@ -80,9 +78,10 @@ void LexicalAnalyzer::tokenizer_() {
 			{
 				nextChar = "";
 			}
-
+			
 			if (multiLineComment) 
-			{
+			{	
+				lineStart = false;
 				if (currentChar == "#" && nextChar == "#")
 					multiLineComment = false;
 				continue;
@@ -90,7 +89,8 @@ void LexicalAnalyzer::tokenizer_() {
 
 		
 			if (currentChar == "#")
-			{
+			{	
+				lineStart = false;
 				pushTempStr(temp, line);
 				if (nextChar == "#")
 				{
@@ -143,7 +143,23 @@ void LexicalAnalyzer::tokenizer_() {
 				currentChar = "";
 				isFloat = false;
 			}
-		
+			if (lineStart)
+			{
+				if (currentChar == "\t" || currentChar == " ")
+				{
+					temp += currentChar;
+					if (nextChar != "\t" && nextChar != " ")
+					{
+						pushTempStr(temp, line);
+						lineStart = false;
+					}
+					continue;
+				}
+				else {
+					pushTempStr(temp, line);
+					lineStart = false;
+				}
+			}
 			if (currentChar == "'")
 			{
 				pushTempStr(temp, line);
@@ -181,7 +197,7 @@ void LexicalAnalyzer::tokenizer_() {
 				continue;
 			}
 			
-
+			
 			if (currentChar == "\"")
 			{
 				pushTempStr(temp, line);
@@ -206,21 +222,7 @@ void LexicalAnalyzer::tokenizer_() {
 					else {
 						temp += lineStr[charIndex];
 					}
-				/*	temp += lineStr[charIndex];
-					if (lineStr[charIndex] + "" != "\\")
-					{
-						if (++charIndex < lineSize)
-						{
-							temp += lineStr[charIndex];
-							continue;
-						}
-						break;
-					}
-					if (lineStr[charIndex] + "" != "\"")
-					{
-						temp += lineStr[charIndex];
-						break;
-					}*/
+			
 				}
 				pushTempStr(temp, line);
 				continue;
@@ -304,7 +306,7 @@ void LexicalAnalyzer::tokenizer_() {
 				continue;
 			}
 
-			if (currentChar == " ")
+			if (currentChar == " " ||  currentChar == "\t")
 			{
 				pushTempStr(temp, line);
 				continue;
@@ -521,46 +523,79 @@ void LexicalAnalyzer::tokenizer()
 
 void LexicalAnalyzer::classifier()
 {
+	vector<int> stack;
+	stack.push_back(0);
 	
 	
 	for (unsigned i = 0; i < wordLine.size(); i++)
 	{
-		if (isID_(wordLine.at(i).word, wordLine.at(i).line) != "false")
+		string word = wordLine.at(i).word;
+		int line = wordLine.at(i).line;
+		if (isID_(word,line) != "false")
 		{
-			if (isKeyword(wordLine.at(i).word) != "false")
+			if (isKeyword(word) != "false")
 			{
-				if (isKeyword(wordLine.at(i).word) == wordLine.at(i).word)
-					token = Token(isKeyword(wordLine.at(i).word), "", wordLine.at(i).line);
+				if (isKeyword(word) == word)
+					token = Token(isKeyword(word), "", line);
 				else
-					token = Token(isKeyword(wordLine.at(i).word), wordLine.at(i).word, wordLine.at(i).line);
+					token = Token(isKeyword(word), word, line);
 			} else
-			      token = Token("ID", wordLine.at(i).word, wordLine.at(i).line);
+			      token = Token("ID", word, line);
 		}
-		else if (isInt(wordLine.at(i).word))
-			token = Token("int_const", wordLine.at(i).word, wordLine.at(i).line);
-		else if (isFloat(wordLine.at(i).word))
-			token = Token("float_const", wordLine.at(i).word, wordLine.at(i).line);
-		else if (isChar(wordLine.at(i).word))
+		else if (isInt(word))
+			token = Token("int_const", word, line);
+		else if (isFloat(word))
+			token = Token("float_const", word, line);
+		else if (isChar(word))
 		{
-			string w = wordLine.at(i).word.substr(1, wordLine.at(i).word.size() - 2);
-			token = Token("char_const", w, wordLine.at(i).line);
+			string w = word.substr(1, word.size() - 2);
+			token = Token("char_const", w, line);
 		}
-		else if (isString(wordLine.at(i).word))
+		else if (isString(word))
 		{
-			string w = wordLine.at(i).word.substr(1, wordLine.at(i).word.size() - 2);
-			token = Token("string_const", w, wordLine.at(i).line);
+			string w = word.substr(1, word.size() - 2);
+			token = Token("string_const", w, line);
 		}
-		else if (isPunctuator(wordLine.at(i).word))
-			token = Token(wordLine.at(i).word, "", wordLine.at(i).line);
-		else if (isOperator(wordLine.at(i).word) != "false")
+		else if (isPunctuator(word))
+			token = Token(word, "", line);
+		else if (isOperator(word) != "false")
 		{
-			if (isOperator(wordLine.at(i).word) == wordLine.at(i).word)
-				token = Token(wordLine.at(i).word, "", wordLine.at(i).line);
+			if (isOperator(word) == word)
+				token = Token(word, "", line);
 			else
-				token = Token(isOperator(wordLine.at(i).word), wordLine.at(i).word, wordLine.at(i).line);
+				token = Token(isOperator(word), word, line);
+		}
+		else if (isIndent(word))
+		{
+			
+			int spaceCount = 0;
+			for (unsigned i = 0; i < word.size();i++)
+			{
+				if (word[i] == '\t')
+				{
+					spaceCount = (spaceCount + 8) / 8 * 8;
+				}
+				else
+					spaceCount++;
+			}
+			if (stack.back() < spaceCount)
+			{
+				token = Token("IndentInit", to_string(spaceCount), line);
+				stack.push_back(spaceCount);
+			}
+			else if (stack.back() > spaceCount)
+			{
+				while (stack.back() > spaceCount)
+				{
+					stack.pop_back();
+				}
+				token = Token("IndentOut", to_string(spaceCount), line);
+			}
+			else
+				continue;
 		}
 		else
-			token = Token("Invalid Token", wordLine.at(i).word, wordLine.at(i).line);
+			token = Token("InvalidToken", word, line);
 
 		outfile << "(" << token.getClassPart() << ", " << token.getValuePart() << ", " << token.getLineNo() << ")" << std::endl;
 		tokenlist.push_back(token);
@@ -677,6 +712,13 @@ bool LexicalAnalyzer::isInt(string word)
 		return true;
 	return false;
 }
+bool LexicalAnalyzer::isIndent(string word)
+{
+	regex b("[\t ]*");
+	if (regex_match(word, b))
+		return true;
+	return false;
+}
 
 // <=========================================FLOAT===============================================>
 
@@ -761,7 +803,7 @@ string LexicalAnalyzer::isKeyword(string word)
 	if (word == "int" || word == "float" || word == "char" || word == "boolean")
 		return "DT";
 	else if (word == "True" || word == "1" || word == "False" || word == "0")
-		return "bool";
+		return "bool_const";
 	else if (word == "self" || word == "this")
 		return "self";
 
