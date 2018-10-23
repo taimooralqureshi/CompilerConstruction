@@ -1,4 +1,18 @@
-@int
+for(i in list):
+	a=1
+	b=3
+	if(True):
+		c=4
+	v=2
+
+def __myFunc(a):
+	a += 1
+	b=a
+	if(True)
+		s=1
+	
+
+##@int
 "abcd"a'\SD
 "abcd
 asd+123-12a
@@ -14,7 +28,7 @@ __s6
 $tq
 __@$parker
 @bs
-## = 3##
+ = 3
 &abc' ' + 21;
 a'\n'*(b + +c)"int kl \" m"
 i++
@@ -26,5 +40,5 @@ i++
 45.4e+4
 6.1e45
 .4a45
-##abc
+abc
 123.2##
