@@ -8,7 +8,9 @@ for(i in list):
 def __myFunc(a):
 	a += 1
 	b=a
-
+	if(True)
+		s=1
+	
 
 ##@int
 "abcd"a'\SD

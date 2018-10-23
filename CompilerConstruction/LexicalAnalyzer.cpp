@@ -20,6 +20,7 @@ static bool lineStart = false;
 LexicalAnalyzer::LexicalAnalyzer(std::vector<string> fileInput)
 {
 	this->input = fileInput;
+	input.push_back("~");
 }
 
 
@@ -588,8 +589,8 @@ void LexicalAnalyzer::classifier()
 				while (stack.back() > spaceCount)
 				{
 					stack.pop_back();
+					token = Token("IndentOut", to_string(spaceCount), line);
 				}
-				token = Token("IndentOut", to_string(spaceCount), line);
 			}
 			else
 				continue;
