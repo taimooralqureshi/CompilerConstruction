@@ -11,7 +11,7 @@ struct WL {
 	unsigned line;
 };
 Token token;
-vector<Token> tokenlist;
+
 vector<string> word;
 vector<int> line_number;
 std::ofstream outfile("output.txt");
@@ -37,7 +37,7 @@ void pushTempStr(string &temp, unsigned Line)
 		temp = "";
 }
 
-void LexicalAnalyzer::tokenizer_() {
+void LexicalAnalyzer::tokenizer() {
 	
 
 
@@ -54,20 +54,28 @@ void LexicalAnalyzer::tokenizer_() {
 
 	bool
 		multiLineComment = false,
-		isFloat = false;
-		
-
+		isFloat = false,
+		eof = false,
+		comment = false;
 	
 
 	//logic implementation
 	for (unsigned line = 0; line < noOfLines ; line++)
 	{
+		bool lineEmpty = true;
+		comment = false;
 		lineSize = input.at(line).size();
 		lineStr = input.at(line);
 		if (lineSize)
+		{
+			lineEmpty = false;
 			lineStart = true;
+		}
 		else
+		{
+		
 			lineStart = false;
+		}
 		for (unsigned charIndex = 0; charIndex < lineSize; charIndex++)
 		{
 			currentChar = lineStr[charIndex];
@@ -84,15 +92,22 @@ void LexicalAnalyzer::tokenizer_() {
 			{	
 				lineStart = false;
 				if (currentChar == "#" && nextChar == "#")
+				{
 					multiLineComment = false;
+					lineEmpty = true;
+				}
 				continue;
 			}
 
 		
 			if (currentChar == "#")
 			{	
+				comment = true;
 				lineStart = false;
-				pushTempStr(temp, line);
+				if (temp != "")
+				{
+					pushTempStr(temp+"\\n", line);
+				}
 				if (nextChar == "#")
 				{
 					multiLineComment = true;
@@ -137,23 +152,27 @@ void LexicalAnalyzer::tokenizer_() {
 					else
 					{
 						pushTempStr(temp, line);
-						temp = lineStr[charIndex];
+						charIndex--;
 						break;
 					}
 				}
 				currentChar = "";
 				isFloat = false;
+				continue;
 			}
 			if (lineStart)
 			{
 				if (currentChar == "\t" || currentChar == " ")
 				{
+					lineEmpty = true;
 					temp += currentChar;
 					if (nextChar != "\t" && nextChar != " ")
 					{
 						pushTempStr(temp, line);
 						lineStart = false;
+						if(nextChar != "")	lineEmpty = false;
 					}
+					
 					continue;
 				}
 				else {
@@ -295,12 +314,6 @@ void LexicalAnalyzer::tokenizer_() {
 					++charIndex;
 					
 				}
-				else if ((currentChar == "+" || currentChar == "-") && isdigit(nextChar[0]))
-				{
-					if(temp == "")
-						temp += currentChar;
-				
-				}
 				else {
 					wordLine.push_back({ currentChar, line+1 });
 				}
@@ -312,13 +325,23 @@ void LexicalAnalyzer::tokenizer_() {
 				pushTempStr(temp, line);
 				continue;
 			}
+			if (currentChar == "~")
+			{
+				eof = true;
+				temp += currentChar;
+				break;
 
+			}
 		
 			temp += currentChar;
 		}
 		pushTempStr(temp, line);
-
+		if(!multiLineComment && !lineEmpty && !eof && !comment )
+			wordLine.push_back({ "\\n", line + 1 });
+		if (eof)
+			break;
 	}
+	
 	for (unsigned i = 0; i < wordLine.size(); i++)  //printing word list on console
 		std::cout << wordLine.at(i).word << endl;
 
@@ -326,213 +349,308 @@ void LexicalAnalyzer::tokenizer_() {
 
 }
 
-void LexicalAnalyzer::tokenizer()
-{
-	int line_num;
-	string current_char, next_char, temp = "", op;
-	bool multilineComment = false, isFloat=false;//edit
-	for (unsigned i = 0; i < input.size(); i++) //for reading each line
-	{
-		line_num = i + 1;
-		this->line = this->input.at(i);
-		for (unsigned j = 0; j < this->line.size(); j++)   //for reading each char of line i
-		{
-			current_char = this->line[j];
-			next_char = this->line[j + 1];
-			
-			if (multilineComment)//edit 
-			{
-				if (current_char == "#" && next_char == "#")
-					multilineComment = false;
-				continue;
+//void LexicalAnalyzer::tokenizer()
+//{
+//	int line_num;
+//	string current_char, next_char, temp = "", op;
+//	bool multilineComment = false, isFloat=false;//edit
+//	for (unsigned i = 0; i < input.size(); i++) //for reading each line
+//	{
+//		line_num = i + 1;
+//		this->line = this->input.at(i);
+//		for (unsigned j = 0; j < this->line.size(); j++)   //for reading each char of line i
+//		{
+//			current_char = this->line[j];
+//			next_char = this->line[j + 1];
+//			
+//			if (multilineComment)//edit 
+//			{
+//				if (current_char == "#" && next_char == "#")
+//					multilineComment = false;
+//				continue;
+//
+//			}
+//			//for single line comment
+//			if (current_char == "#" && next_char != "#")//edit
+//				break;
+//
+//			//for multiline comment
+//			if (current_char == "#")//edit
+//			{
+//				multilineComment = true;
+//				j += 1;
+//				continue;
+//			}
+//
+//			//for single letter character eg. 'n'
+//			if (current_char == "\'" && next_char == "\\")
+//			{
+//				if (this->line[j + 2] && this->line[j + 3])
+//				{
+//					if (temp != "")
+//					{
+//						word.push_back(temp);
+//						line_number.push_back(line_num);
+//					}
+//					temp = current_char + next_char + this->line[j + 2] + this->line[j + 3];
+//					word.push_back(temp);
+//					line_number.push_back(line_num);
+//					temp = "";
+//					j += 3;//edit
+//					continue;
+//				}
+//			}
+//
+//			//for 2 letter character eg.'\n'
+//			if (current_char == "\'")
+//			{
+//				if (this->line[j + 2])
+//				{
+//					if (temp != "")
+//					{
+//						word.push_back(temp);
+//						line_number.push_back(line_num);
+//					}
+//					temp = current_char + next_char + this->line[j + 2];
+//					word.push_back(temp);
+//					line_number.push_back(line_num);
+//					temp = "";
+//					j += 2;//edit
+//					continue;
+//				}
+//			}
+//
+//			//for string
+//			if (current_char == "\"")
+//			{
+//				if (temp != "")
+//				{
+//					word.push_back(temp);
+//					line_number.push_back(line_num);
+//					temp = "";
+//				}
+//				while (this->line[j])
+//				{
+//					if (this->line[j] != '\\' && this->line[j + 1] == '\"')
+//					{
+//						temp += this->line[j++];
+//						temp += this->line[j++];
+//						break;
+//					}
+//					else
+//						temp += this->line[j++];
+//				}
+//				word.push_back(temp);
+//				line_number.push_back(line_num);
+//				temp = "";
+//				continue;
+//			}
+//
+//			if (isPunctuator(current_char))//edit
+//			{
+//				word.push_back(current_char);
+//				line_number.push_back(line_num);
+//				continue;
+//			}
+//			if (isOperator(current_char) != "false")//edit  ,j
+//			{
+//				string diChar = current_char + next_char;
+//				if (isOperator(diChar) != "false")  //,j
+//				{
+//					word.push_back(diChar);
+//					j++;
+//				}
+//				else
+//					word.push_back(current_char);
+//				line_number.push_back(line_num);
+//				continue;
+//			}
+//			if (current_char == " ")//edit
+//			{
+//				if (temp != "")
+//				{
+//					word.push_back(current_char);
+//					line_number.push_back(line_num);
+//					temp = "";
+//
+//				}
+//				continue;
+//			}
+//
+//			//for 2 character operators eg. ++ -- >= etc
+//			if (j + 2 <= this->line.size())
+//				op = next_char + this->line[j + 2];
+//			else op = next_char + " ";
+//
+//			//storing each char in temp
+//			temp += current_char;
+//
+//			if (next_char == " " || isOperator(op) != "false" || isOperator(next_char) != "false" || isPunctuator(next_char))
+//			{
+//				//edit start
+//				string str;
+//				str= this->line[j + 2];
+//				if (next_char == "." && (temp == "" || isInt(temp)) && isInt(str))
+//				{
+//					temp += next_char;
+//					temp += str;
+//					j++;
+//					
+//
+//					isFloat = true;
+//					continue;
+//				}
+//				if (!isFloat)
+//				{
+//					word.push_back(temp);                  //saving temp
+//					line_number.push_back(line_num);       //saving line_number
+//					temp = "";                             //clearing temp
+//					isFloat = true;
+//				}
+//				//edit end
+//				if (temp != "")
+//				{
+//					word.push_back(temp);                  //saving temp
+//					line_number.push_back(line_num);       //saving line_number
+//					temp = "";                             //clearing temp
+//				}
+//
+//				if (isOperator(op) != "false")
+//				{
+//					j += 2;
+//					word.push_back(op);  //saving 2 char operator
+//					line_number.push_back(line_num);
+//				}
+//				else if (isOperator(next_char) != "false" || isPunctuator(next_char))
+//				{
+//					j++;
+//					word.push_back(next_char);  //saving single char operator or punctuator
+//					line_number.push_back(line_num);
+//				}
+//				if (j + 1 <= this->line.size() && this->line[j + 1] == ' ')   //ignoring spaces
+//					j++;
+//			}
+//		}
+//		if (temp != "")
+//		{
+//			//if temp is not null then saving temp before going to next line
+//			word.push_back(temp);
+//			line_number.push_back(line_num);
+//			temp = "";
+//		}
+//	}
+//	for (unsigned i = 0; i < word.size(); i++)  //printing word list on console
+//		std::cout << word.at(i) << endl;
+//}
 
-			}
-			//for single line comment
-			if (current_char == "#" && next_char != "#")//edit
-				break;
 
-			//for multiline comment
-			if (current_char == "#")//edit
-			{
-				multilineComment = true;
-				j += 1;
-				continue;
-			}
-
-			//for single letter character eg. 'n'
-			if (current_char == "\'" && next_char == "\\")
-			{
-				if (this->line[j + 2] && this->line[j + 3])
-				{
-					if (temp != "")
-					{
-						word.push_back(temp);
-						line_number.push_back(line_num);
-					}
-					temp = current_char + next_char + this->line[j + 2] + this->line[j + 3];
-					word.push_back(temp);
-					line_number.push_back(line_num);
-					temp = "";
-					j += 3;//edit
-					continue;
-				}
-			}
-
-			//for 2 letter character eg.'\n'
-			if (current_char == "\'")
-			{
-				if (this->line[j + 2])
-				{
-					if (temp != "")
-					{
-						word.push_back(temp);
-						line_number.push_back(line_num);
-					}
-					temp = current_char + next_char + this->line[j + 2];
-					word.push_back(temp);
-					line_number.push_back(line_num);
-					temp = "";
-					j += 2;//edit
-					continue;
-				}
-			}
-
-			//for string
-			if (current_char == "\"")
-			{
-				if (temp != "")
-				{
-					word.push_back(temp);
-					line_number.push_back(line_num);
-					temp = "";
-				}
-				while (this->line[j])
-				{
-					if (this->line[j] != '\\' && this->line[j + 1] == '\"')
-					{
-						temp += this->line[j++];
-						temp += this->line[j++];
-						break;
-					}
-					else
-						temp += this->line[j++];
-				}
-				word.push_back(temp);
-				line_number.push_back(line_num);
-				temp = "";
-				continue;
-			}
-
-			if (isPunctuator(current_char))//edit
-			{
-				word.push_back(current_char);
-				line_number.push_back(line_num);
-				continue;
-			}
-			if (isOperator(current_char) != "false")//edit  ,j
-			{
-				string diChar = current_char + next_char;
-				if (isOperator(diChar) != "false")  //,j
-				{
-					word.push_back(diChar);
-					j++;
-				}
-				else
-					word.push_back(current_char);
-				line_number.push_back(line_num);
-				continue;
-			}
-			if (current_char == " ")//edit
-			{
-				if (temp != "")
-				{
-					word.push_back(current_char);
-					line_number.push_back(line_num);
-					temp = "";
-
-				}
-				continue;
-			}
-
-			//for 2 character operators eg. ++ -- >= etc
-			if (j + 2 <= this->line.size())
-				op = next_char + this->line[j + 2];
-			else op = next_char + " ";
-
-			//storing each char in temp
-			temp += current_char;
-
-			if (next_char == " " || isOperator(op) != "false" || isOperator(next_char) != "false" || isPunctuator(next_char))
-			{
-				//edit start
-				string str;
-				str= this->line[j + 2];
-				if (next_char == "." && (temp == "" || isInt(temp)) && isInt(str))
-				{
-					temp += next_char;
-					temp += str;
-					j++;
-					
-
-					isFloat = true;
-					continue;
-				}
-				if (!isFloat)
-				{
-					word.push_back(temp);                  //saving temp
-					line_number.push_back(line_num);       //saving line_number
-					temp = "";                             //clearing temp
-					isFloat = true;
-				}
-				//edit end
-				if (temp != "")
-				{
-					word.push_back(temp);                  //saving temp
-					line_number.push_back(line_num);       //saving line_number
-					temp = "";                             //clearing temp
-				}
-
-				if (isOperator(op) != "false")
-				{
-					j += 2;
-					word.push_back(op);  //saving 2 char operator
-					line_number.push_back(line_num);
-				}
-				else if (isOperator(next_char) != "false" || isPunctuator(next_char))
-				{
-					j++;
-					word.push_back(next_char);  //saving single char operator or punctuator
-					line_number.push_back(line_num);
-				}
-				if (j + 1 <= this->line.size() && this->line[j + 1] == ' ')   //ignoring spaces
-					j++;
-			}
-		}
-		if (temp != "")
-		{
-			//if temp is not null then saving temp before going to next line
-			word.push_back(temp);
-			line_number.push_back(line_num);
-			temp = "";
-		}
-	}
-	for (unsigned i = 0; i < word.size(); i++)  //printing word list on console
-		std::cout << word.at(i) << endl;
-}
-
-
+//classifier 
+//void LexicalAnalyzer::classifier()
+//{
+//	vector<int> stack;
+//	stack.push_back(0);
+//	
+//	
+//	for (unsigned i = 0; i < wordLine.size(); i++)
+//	{
+//		string word = wordLine.at(i).word;
+//		int line = wordLine.at(i).line;
+//		if (isID_(word,line) != "false")
+//		{
+//			if (isKeyword(word) != "false")
+//			{
+//				if (isKeyword(word) == word)
+//					token = Token(isKeyword(word), "", line);
+//				else
+//					token = Token(isKeyword(word), word, line);
+//			} else
+//			      token = Token("ID", word, line);
+//		}
+//		else if (isInt(word))
+//			token = Token("int_const", word, line);
+//		else if (isFloat(word))
+//			token = Token("float_const", word, line);
+//		else if (isChar(word))
+//		{
+//			string w = word.substr(1, word.size() - 2);
+//			token = Token("char_const", w, line);
+//		}
+//		else if (isString(word))
+//		{
+//			string w = word.substr(1, word.size() - 2);
+//			token = Token("string_const", w, line);
+//		}
+//		else if (isPunctuator(word))
+//			token = Token(word, "", line);
+//		else if (isOperator(word) != "false")
+//		{
+//			if (isOperator(word) == word)
+//				token = Token(word, "", line);
+//			else
+//				token = Token(isOperator(word), word, line);
+//		}
+//		else if (isIndent(word))
+//		{
+//			
+//			int spaceCount = 0;
+//			for (unsigned i = 0; i < word.size();i++)
+//			{
+//				if (word[i] == '\t')
+//				{
+//					spaceCount = (spaceCount + 8) / 8 * 8;
+//				}
+//				else
+//					spaceCount++;
+//			}
+//			if (stack.back() < spaceCount)
+//			{
+//				token = Token("IndentInit", to_string(spaceCount), line);
+//				stack.push_back(spaceCount);
+//			}
+//			else if (stack.back() > spaceCount)
+//			{
+//				while (stack.back() > spaceCount)
+//				{
+//					stack.pop_back();
+//					token = Token("IndentOut", to_string(stack.back()), line);
+//					if (stack.back() > spaceCount)
+//					{
+//						outfile << "(" << token.getClassPart() << ", " << token.getValuePart() << ", " << token.getLineNo() << ")" << std::endl;
+//						tokenlist.push_back(token);
+//					}
+//					/*if (spaceCount != stack.back())
+//					{
+//						token = Token("nl", "\\n", line);
+//						outfile << "(" << token.getClassPart() << ", " << token.getValuePart() << ", " << token.getLineNo() << ")" << std::endl;
+//						tokenlist.push_back(token);
+//					}*/
+//				}
+//			}
+//			else
+//				continue;
+//		} else if (word == "\\n")
+//		{
+//			token = Token("nl", "\\n", line);
+//		}
+//		else
+//			token = Token("InvalidToken", word, line);
+//
+//		outfile << "(" << token.getClassPart() << ", " << token.getValuePart() << ", " << token.getLineNo() << ")" << std::endl;
+//		tokenlist.push_back(token);
+//	}
+//}
 
 void LexicalAnalyzer::classifier()
 {
 	vector<int> stack;
 	stack.push_back(0);
-	
-	
+
+
 	for (unsigned i = 0; i < wordLine.size(); i++)
 	{
 		string word = wordLine.at(i).word;
 		int line = wordLine.at(i).line;
-		if (isID_(word,line) != "false")
+		if (isID_(word, line) != "fals")
 		{
 			if (isKeyword(word) != "false")
 			{
@@ -540,8 +658,9 @@ void LexicalAnalyzer::classifier()
 					token = Token(isKeyword(word), "", line);
 				else
 					token = Token(isKeyword(word), word, line);
-			} else
-			      token = Token("ID", word, line);
+			}
+			else
+				token = Token("ID", word, line);
 		}
 		else if (isInt(word))
 			token = Token("int_const", word, line);
@@ -568,16 +687,16 @@ void LexicalAnalyzer::classifier()
 		}
 		else if (isIndent(word))
 		{
-			
+
 			int spaceCount = 0;
-			for (unsigned i = 0; i < word.size();i++)
+			for (unsigned i = 0; i < word.size(); i++)
 			{
 				if (word[i] == '\t')
 				{
-					spaceCount = (spaceCount + 8) / 8 * 8;
+					spaceCount = (spaceCount + 8) / 8 * 8;  //??
 				}
 				else
-					spaceCount++;
+						spaceCount++;
 			}
 			if (stack.back() < spaceCount)
 			{
@@ -589,14 +708,27 @@ void LexicalAnalyzer::classifier()
 				while (stack.back() > spaceCount)
 				{
 					stack.pop_back();
-					token = Token("IndentOut", to_string(spaceCount), line);
+					token = Token("IndentOut", to_string(stack.back()), line);
+					if (stack.back() > spaceCount)
+					{
+						outfile << "(" << token.getClassPart() << ", " << token.getValuePart() << ", " << token.getLineNo() << ")" << std::endl;
+						tokenlist.push_back(token);
+						/*token = Token("nl", "\\n", line);
+						outfile << "(" << token.getClassPart() << ", " << token.getValuePart() << ", " << token.getLineNo() << ")" << std::endl;
+						tokenlist.push_back(token);
+*/
+					}
 				}
 			}
 			else
 				continue;
 		}
+		else if (word == "\\n")
+		{
+			token = Token("nl", "\\n", line);
+		}
 		else
-			token = Token("InvalidToken", word, line);
+						token = Token("InvalidToken", word, line);
 
 		outfile << "(" << token.getClassPart() << ", " << token.getValuePart() << ", " << token.getLineNo() << ")" << std::endl;
 		tokenlist.push_back(token);
@@ -659,7 +791,7 @@ string LexicalAnalyzer::isID_(string &word, int num)
 	if (regex_match(word, regex("[A-Za-z][A-Za-z0-9_]*")))
 		return word;
 	
-	return "false";
+	return "fals";
 }
 string LexicalAnalyzer::isID(string word, int num)
 {
@@ -771,7 +903,9 @@ bool LexicalAnalyzer::isPunctuator(string word)
 
 string LexicalAnalyzer::isOperator(string word)
 {
-	if (word == "!" || word == "~")
+	if (word == "~")
+		return "EOF";
+	else if (word == "!")
 		return "not";
 	else if (word == "/" || word == "%")
 		return "DM";
@@ -793,7 +927,7 @@ string LexicalAnalyzer::isOperator(string word)
 bool LexicalAnalyzer::isOperator_(string word)
 {
 	
-	vector<string> operators = { "!" , "~" ,  "/", "%", "==", "!=",  "<=" , ">=", "<" , ">" ,  "+=", "-=", "*=" , "/=", "%=","->", ".", "*",  "|", "&", "=","^",":", "?","+" ,"-" };
+	vector<string> operators = { "!" ,  "/", "%", "==", "!=",  "<=" , ">=", "<" , ">" ,  "+=", "-=", "*=" , "/=", "%=","->", ".", "*",  "|", "&", "=","^",":", "?","+" ,"-" };
 	return (find(operators.begin(), operators.end(), word) != operators.end());
 }
 
@@ -806,12 +940,12 @@ string LexicalAnalyzer::isKeyword(string word)
 	else if (word == "True" || word == "1" || word == "False" || word == "0")
 		return "bool_const";
 	else if (word == "self" || word == "this")
-		return "self";
+		return "this";
 
 	vector<string> keywords = {"And", "assert", "break", "class", "continue", "def", "del",
 		"elif", "else", "except", "finally", "for", "global", "if", "in", "lambda", "new",
-		"None", "Not", "Or", "pass", "raise", "return", "self", "string", "super", "this",
-		"try", "while"};
+		"None", "Not", "Or", "pass", "raise", "return", "string", "super",
+		"try", "while", "exception", "List", "dict"};
 
 	for (unsigned i = 0; i < keywords.size(); i++)
 		if (keywords.at(i) == word)

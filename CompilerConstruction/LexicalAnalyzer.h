@@ -1,12 +1,10 @@
 #pragma once
 #ifndef LEXICALANALYZER_H
 #define LEXICALANALYZER_H
-#include <iostream>
-#include <conio.h>
-#include <stdio.h>
+
 #include <string>
+#include <vector>
 #include "Token.h"
-#include<vector>
 using namespace std;
 
 
@@ -17,10 +15,9 @@ public:
 	~LexicalAnalyzer();
 
 	void tokenizer();
-	void tokenizer_();//   review
 
 	void classifier();
-	void classifier_(); 
+ 
 
 	string isID(string word, int num);
 	string isID_(string &word, int num);
@@ -32,15 +29,16 @@ public:
 	bool isPunctuator(string word);
 	bool isIndent(string word);
 	string isOperator(string word);
-    bool isOperator_(string word); //   review
+    bool isOperator_(string word);
 
 	string isKeyword(string word);
 
-
+	vector<Token> tokenlist;
 private:
 	//string str;
 	vector<string> input;
 	string line;
+	
 };
 
 #endif
